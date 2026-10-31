@@ -252,7 +252,11 @@ class LocationSource implements UserInterface, PasswordAuthenticatedUserInterfac
      */
     public function getRoles(): array
     {
-        return ['ROLE_SUBMITTER'];
+        if ($this->deleted_at === null) {
+            return ['ROLE_SUBMITTER'];
+        } else {
+            return [];
+        }
     }
 
     /**

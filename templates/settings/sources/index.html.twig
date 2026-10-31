@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Location Sources{% endblock %}
+
+{% block body %}
+    <h1>Location Sources</h1>
+    <a class="btn btn-primary btn-sm" href="{{ path('source_new') }}" role="button">New</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Name</th>
+                <th>Enabled</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <th scope="row">{{ item.id }}</th>
+                <td>{{ item.sourceType }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ (item.deletedAt === null) ? 'Yes' : 'No' }}</td>
+                <td>
+                    {% if item.deletedAt === null %}
+                    <form action="{{ path('source_delete', {id: item.id}) }}" method="post" onsubmit="return confirm('Really?')">
+                        <input type="hidden" name="token" value="{{ csrf_token('delete-item') }}">
+                        <input type="hidden" name="id" value="{{ item.id }}">
+                        <input type="submit" class="btn btn-danger" value="Disable" />
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ ux_pagination(items) }}
+{% endblock %}
