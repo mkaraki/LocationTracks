@@ -5,11 +5,42 @@ namespace App\Controller;
 use App\Entity\LocationPoint;
 use App\Entity\LocationSource;
 use App\Entity\RawRecord;
+use App\Entity\User;
+use App\Repository\LocationPointRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\UX\Pagination\PaginatorInterface;
 
 class LocationPointController extends AbstractController
 {
+    #[Route('/points/', name: 'point_index')]
+    #[IsGranted('ROLE_USER')]
+    public function index(
+        LocationPointRepository $repository,
+        PaginatorInterface $paginator,
+        #[CurrentUser] User $user,
+    ): Response
+    {
+        $items = $paginator
+            ->cursor(
+                $repository->createQueryBuilder('points')
+                    ->innerJoin('points.source', 'sources')
+                    ->where('sources.user = :user')
+                    ->setParameter('user', $user)
+            )
+            ->orderBy('id', 'DESC')
+            ->perPage(100)
+            ->paginate();
+
+        return $this->render('points/index.html.twig', [
+            'items' => $items,
+        ]);
+    }
+
     public function process_owntracks_location_data(
         EntityManagerInterface $em,
         LocationSource $source,

@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Location Points{% endblock %}
+
+{% block body %}
+    <h1>Location Points</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Reported at</th>
+                <th>Longitude / Latitude</th>
+                <th>Misc</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <th scope="row">{{ item.id }}</th>
+                <th>{{ item.reportedAt ?? item.createdAt }}</th>
+                <th>{{ item.logitude }}, {{ item.latitude }}</th>
+                <th>
+                    Acc: {{ item.accuracy_m ?? '?' }} m,
+                    Alt: {{ item.altitude_m ?? '?' }} m
+                </th>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ ux_pagination(items) }}
+{% endblock %}
