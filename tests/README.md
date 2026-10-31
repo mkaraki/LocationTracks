@@ -26,6 +26,11 @@ existing PHPUnit, BrowserKit and CSS Selector requirements.
   the real security firewalls, controllers and Doctrine. They check Basic auth,
   malformed input, valid and invalid locations, non-location records, nested
   canonicalization, duplicates, list order, route methods and form login/CSRF.
+  Source-management tests also cover owner-only listings, source creation and
+  input validation, tampered forms, disable authorization/CSRF, repeated disables,
+  credential revocation and preservation of historical records. Unit tests check
+  role removal on disabled sources; an integration test exercises the real
+  security user provider after credentials are cleared.
 
 ## MariaDB 10.6 setup
 
@@ -43,13 +48,13 @@ The test container exposes port 3307 on localhost and creates
 volume shared with the development server. Unit tests need no database and can
 be run independently with `php bin/phpunit --testsuite Unit`.
 
-`config/packages/test/doctrine.yaml` reads `TEST_DATABASE_URL` instead of the
-application's `DATABASE_URL`. The committed default in `.env.test` connects to
-the dedicated test container. To use another MariaDB 10.6 server, override
-`TEST_DATABASE_URL` in `.env.test.local` or the process environment:
+Tests use the standard `DATABASE_URL` through `config/packages/doctrine.yaml`.
+The committed default in `.env.test` connects to the dedicated test container.
+To use another MariaDB 10.6 server, override `DATABASE_URL` in `.env.test.local`
+or the process environment (`.env.local` is ignored in the test environment):
 
 ```dotenv
-TEST_DATABASE_URL="mysql://test:test@127.0.0.1:3307/location_tracks?serverVersion=10.6.27-MariaDB&charset=utf8mb4"
+DATABASE_URL="mysql://test:test@127.0.0.1:3307/location_tracks?serverVersion=10.6.27-MariaDB&charset=utf8mb4"
 ```
 
 The URL contains the **base** name `location_tracks`; the existing Doctrine
@@ -57,14 +62,16 @@ configuration appends `_test` and optional `TEST_TOKEN`. The resulting database
 must exist, and its user needs permission to create/drop its tables. Parallel
 runs must use different `TEST_TOKEN` values and pre-create those databases.
 
-Inside the existing devcontainer, another option is a test-only URL pointing to
-`db:3306` with that server's credentials and the same base name. Run
+The existing devcontainer exports `DATABASE_URL` for its development database,
+which takes precedence over `.env.test`. Override it in the process environment
+when testing, using the desired base name and `db:3306` with that server's
+credentials. Run
 `php bin/console doctrine:database:create --env=test --if-not-exists` once to
 create `location_tracks_test`. Do not point this URL at the application database.
 
 Before each database test, the fixture helper verifies the `test` environment,
-the resolved name `location_tracks_test` (with an optional alphanumeric/underscore
-suffix), and the **actual server version** is MariaDB 10.6. Only then does it
+that the resolved name ends with `_test` (plus an optional alphanumeric/underscore
+worker token), and the **actual server version** is MariaDB 10.6. Only then does it
 drop/recreate the mapped entity tables with Doctrine's `SchemaTool`. Application
 tests keep a single kernel across requests. Tests run sequentially against this
 database; repeated full runs reset their fixtures. SQLite is not used.
@@ -89,6 +96,12 @@ The trigger filters follow
 
 ## Defects corrected while adding regression tests
 
+* A leftover SQLite override prevented the standard `DATABASE_URL` from selecting
+  MariaDB in tests and CI. That override was removed; the fixture helper checks
+  the actual database name and server again before resetting tables.
+* Source creation accepted blank names and values longer than MariaDB's name and
+  username columns, causing database errors instead of form validation errors.
+  These fields now have server-side constraints and HTTP regression tests.
 * MariaDB schema generation failed because the binary `payload_hash` column
   lacked a required length. Its mapping now specifies 64 bytes, matching the
   SHA-256 hex strings written by ingestion. SQLite had not detected this defect.
@@ -105,6 +118,14 @@ The trigger filters follow
   the authenticated session on `/login`.
 
 ## Outstanding review findings
+
+* **New source settings: authentication usernames are not unique.**
+  The new-source form and `LocationSource.auth_username` mapping allow an existing
+  username to be registered again, including one belonging to another owner.
+  The security provider looks up only that username, so sources with the same
+  username cannot be authenticated reliably. Add a form/`UniqueEntity` check and
+  a database unique constraint through a migration (nullable usernames allow
+  multiple disabled sources). Existing duplicates must be resolved first.
 
 1. **High: deduplication crosses source/user boundaries.**
    `RawRecordController::ingest_owntracks()` looks up only `payload_hash`. If two

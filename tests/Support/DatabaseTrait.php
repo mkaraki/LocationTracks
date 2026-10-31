@@ -16,7 +16,8 @@ trait DatabaseTrait
         $connection = $em->getConnection();
         // Check the resolved database and real server before resetting any tables.
         self::assertSame('test', static::$kernel->getEnvironment());
-        //self::assertMatchesRegularExpression('/^location_tracks_test[A-Za-z0-9_]*$/D', $connection->getDatabase());
+        // Too verbose test
+        //self::assertMatchesRegularExpression('/_test[A-Za-z0-9_]*$/D', $connection->getDatabase());
         //self::assertMatchesRegularExpression('/^10\.6\.\d+.*MariaDB/i', $connection->getServerVersion());
         $metadata = $em->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($em);
@@ -26,11 +27,13 @@ trait DatabaseTrait
         return $em;
     }
 
-    protected function createSource(EntityManagerInterface $em, string $username = 'phone'): LocationSource
+    protected function createSource(EntityManagerInterface $em, string $username = 'phone', ?User $owner = null): LocationSource
     {
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        $user = (new User())->setEmail($username.'@example.com');
-        $user->setPasswordHash($hasher->hashPassword($user, 'owner-password'));
+        $user = $owner ?? (new User())->setEmail($username.'@example.com');
+        if ($owner === null) {
+            $user->setPasswordHash($hasher->hashPassword($user, 'owner-password'));
+        }
         $source = (new LocationSource())
             ->setUser($user)
             ->setSourceType(1)

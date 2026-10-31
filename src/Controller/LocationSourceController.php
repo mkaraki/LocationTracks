@@ -60,6 +60,7 @@ class LocationSourceController extends AbstractController
             ->add('name', TextType::class, [
                 'label' => 'Source name',
                 'required' => true,
+                'constraints' => [new Assert\NotBlank(), new Assert\Length(max: 255)],
             ])
             ->add('source_type', ChoiceType::class, [
                 'required' => true,
@@ -72,6 +73,7 @@ class LocationSourceController extends AbstractController
                 'required' => false,
                 'label' => 'BASIC Auth Username',
                 'constraints' => [
+                    new Assert\Length(max: 255),
                     new Assert\When(
                         expression: 'this.getParent().get("source_type").getData() === 1',
                         constraints: [

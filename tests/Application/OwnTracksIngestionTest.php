@@ -3,6 +3,7 @@
 namespace App\Tests\Application;
 
 use App\Entity\LocationPoint;
+use App\Entity\LocationSource;
 use App\Entity\RawRecord;
 use App\Tests\Support\DatabaseTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -158,6 +159,19 @@ class OwnTracksIngestionTest extends WebTestCase
     {
         $this->client->request('GET', '/api/v1/submit/owntracks');
         self::assertResponseStatusCodeSame(405);
+        self::assertSame([[], []], $this->records());
+    }
+
+    public function testDeletedSourceCannotSubmitEvenIfCredentialsAreStillPresent(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $source = $em->getRepository(LocationSource::class)->findOneBy(['auth_username' => 'phone']);
+        $source->setDeletedAt(new \DateTime());
+        $em->flush();
+        $em->clear();
+
+        $this->submit('{"_type":"location","tst":1700000000,"lat":35,"lon":139}');
+        self::assertResponseStatusCodeSame(403);
         self::assertSame([[], []], $this->records());
     }
 }
