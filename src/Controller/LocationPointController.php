@@ -6,21 +6,16 @@ use App\Entity\LocationPoint;
 use App\Entity\LocationSource;
 use App\Entity\RawRecord;
 use App\Entity\User;
+use App\Form\PointMapFilterType;
 use App\Repository\LocationPointRepository;
-use DateInterval;
-use DateTime;
-use DateTimeZone;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TimezoneType;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\UX\Map\Cluster\GridClusteringAlgorithm;
 use Symfony\UX\Map\Icon\Icon;
 use Symfony\UX\Map\Map;
 use Symfony\UX\Map\Marker;
@@ -60,12 +55,20 @@ class LocationPointController extends AbstractController
         LocationPointRepository $repository,
         #[CurrentUser] User $user,
         Request $request,
+        FormFactoryInterface $formFactory,
     ): Response
     {
-        $startTime = new DateTime('now')->sub(new DateInterval('PT24H'))->setTimezone(new DateTimeZone('utc'));
-        $endTime = new DateTime('now')->setTImezone(new DateTimeZone('utc'));
-
-        $items = $repository->findByUserAndTimeRange($user, $startTime, $endTime);
+        $form = $formFactory->createNamed('', PointMapFilterType::class, options: [
+            'action' => $this->generateUrl('point_map'),
+        ]);
+        $form->handleRequest($request);
+        $valid = !$form->isSubmitted() || $form->isValid();
+        $filter = $form->getData();
+        $items = $valid ? $repository->findByUserAndTimeRange(
+            $user,
+            $filter['start'],
+            (clone $filter['end'])->modify('+59 seconds'),
+        ) : [];
         $itemsCount = count($items);
 
         $map = new Map();
@@ -119,7 +122,8 @@ class LocationPointController extends AbstractController
         return $this->render('points/map.html.twig', [
             'map' => $map,
             'itemsCount' => $itemsCount,
-        ]);
+            'filterForm' => $form,
+        ], new Response(status: $valid ? 200 : 422));
     }
 
     public function process_owntracks_location_data(

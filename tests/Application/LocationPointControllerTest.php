@@ -194,4 +194,98 @@ class LocationPointControllerTest extends WebTestCase
         yield 'invalid signature' => [['cursor' => 'invalid']];
         yield 'array value' => [['cursor' => ['invalid']]];
     }
+
+    public function testMapDefaultsToTodayInUtc(): void
+    {
+        $today = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
+        $this->createPoint($this->source, $today->getTimestamp() - 1);
+        $this->createPoint($this->source, $today->getTimestamp());
+        $this->createPoint($this->source, $today->setTime(23, 59, 59)->getTimestamp());
+        $this->createPoint($this->source, $today->modify('+1 day')->getTimestamp());
+        $this->em->flush();
+        $this->client->loginUser($this->source->getUser());
+        $this->client->request('GET', '/points/map');
+
+        self::assertResponseIsSuccessful();
+        self::assertInputValueSame('start', $today->format('Y-m-d').'T00:00');
+        self::assertInputValueSame('end', $today->format('Y-m-d').'T23:59');
+        self::assertSelectorCount(2, 'input[type="datetime-local"]');
+        self::assertSelectorTextSame('#point-count', 'Showing 2 items');
+    }
+
+    #[DataProvider('mapOffsets')]
+    public function testMapConvertsOffsetAndIncludesTheFullEndMinute(string $sign, int $hours, int $minutes, string $utcStart): void
+    {
+        $start = new \DateTimeImmutable($utcStart);
+        foreach ([-1, 0, 119, 120] as $seconds) {
+            $this->createPoint($this->source, $start->getTimestamp() + $seconds);
+        }
+        $other = $this->createSource($this->em, 'other');
+        $this->createPoint($other, $start->getTimestamp());
+        $this->em->flush();
+        $this->client->loginUser($this->source->getUser());
+        $crawler = $this->client->request('GET', '/points/map');
+        $this->client->submit($crawler->selectButton('Plot')->form([
+            'tz_sign' => $sign, 'tz_hours' => $hours, 'tz_minutes' => $minutes,
+            'start' => '2026-11-01T00:00', 'end' => '2026-11-01T00:01',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertInputValueSame('start', '2026-11-01T00:00');
+        self::assertInputValueSame('end', '2026-11-01T00:01');
+        self::assertSelectorTextSame('#point-count', 'Showing 2 items');
+    }
+
+    public static function mapOffsets(): iterable
+    {
+        yield 'Japan' => ['+', 9, 0, '2026-10-31 15:00:00 UTC'];
+        yield 'positive fractional' => ['+', 5, 45, '2026-10-31 18:15:00 UTC'];
+        yield 'negative fractional' => ['-', 3, 30, '2026-11-01 03:30:00 UTC'];
+        yield 'negative zero hours' => ['-', 0, 30, '2026-11-01 00:30:00 UTC'];
+    }
+
+    public function testMapOffsetOnlyDefaultsToTodayInThatOffset(): void
+    {
+        $this->client->loginUser($this->source->getUser());
+        $this->client->request('GET', '/points/map', ['tz_hours' => 9]);
+        $today = new \DateTimeImmutable('today', new \DateTimeZone('+09:00'));
+
+        self::assertResponseIsSuccessful();
+        self::assertInputValueSame('start', $today->format('Y-m-d').'T00:00');
+        self::assertInputValueSame('end', $today->format('Y-m-d').'T23:59');
+    }
+
+    #[DataProvider('invalidMapFilters')]
+    public function testMapRejectsInvalidFilters(array $query): void
+    {
+        $this->client->loginUser($this->source->getUser());
+        $this->client->request('GET', '/points/map', $query);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextSame('#point-count', 'Showing 0 items');
+        self::assertSelectorExists('.invalid-feedback, .alert-danger');
+    }
+
+    public static function invalidMapFilters(): iterable
+    {
+        yield 'reversed' => [['start' => '2026-11-02T00:00', 'end' => '2026-11-01T00:00']];
+        yield 'bad date' => [['start' => '2026-02-30T00:00']];
+        yield 'timezone suffix cannot override offset' => [['start' => '2026-11-01T00:00Z']];
+        yield 'relative text' => [['start' => '2026-11-01T00:00 +1 day']];
+        yield 'invalid hour' => [['start' => '2026-11-01T24:00']];
+        yield 'blank date' => [['start' => '']];
+        yield 'array date' => [['start' => ['bad']]];
+        yield 'hour outside range' => [['tz_hours' => 15]];
+        yield 'minutes outside range' => [['tz_minutes' => 60]];
+        yield 'fractional hours' => [['tz_hours' => '5.5']];
+        yield 'array hours' => [['tz_hours' => ['9']]];
+        yield 'invalid sign' => [['tz_sign' => 'bad']];
+        yield 'offset beyond 14 hours' => [['tz_hours' => 14, 'tz_minutes' => 1]];
+    }
+
+    public function testMapRequiresLogin(): void
+    {
+        $this->client->request('GET', '/points/map');
+        self::assertResponseRedirects('/login');
+    }
 }

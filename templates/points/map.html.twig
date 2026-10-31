@@ -8,9 +8,29 @@
             height: 100%;
             margin: 0;
         }
+        body { display: flex; flex-direction: column; }
+        .map-canvas { flex: 1; min-height: 400px; }
     </style>
-    {{ ux_map(map, { style: 'height: 100%; width: 100%;' }) }}
-    <script>
-        console.info(`Showing ${ {{ itemsCount }} } items`);
-    </script>
+    <div class="p-1" {{ stimulus_controller('map-timezone') }}>
+        {{ form_start(filterForm) }}
+        {{ form_errors(filterForm) }}
+        <div class="row gx-2 gy-0 align-items-end">
+            {% for field in [filterForm.tz_sign, filterForm.tz_hours, filterForm.tz_minutes, filterForm.start, filterForm.end] %}
+                <div class="col-auto">
+                    {{ form_row(field, {
+                        row_attr: { class: 'mb-1' },
+                        label_attr: { class: 'small mb-1' },
+                        attr: { class: field.vars.name == 'tz_sign' ? 'form-select-sm' : 'form-control-sm' }
+                    }) }}
+                </div>
+            {% endfor %}
+            <div class="col-auto mb-1 d-flex align-items-center gap-2">
+                <button class="btn btn-primary btn-sm" type="submit">Plot</button>
+                <span id="point-count" class="small text-body-secondary text-nowrap" role="status">Showing {{ itemsCount }} items</span>
+            </div>
+        </div>
+        <p class="form-text mt-0 mb-1">Times use the selected fixed UTC offset (no automatic daylight saving adjustment). Default: today, 00:00–23:59, using your browser's current UTC offset. Without JavaScript, the default is UTC.</p>
+        {{ form_end(filterForm) }}
+    </div>
+    {{ ux_map(map, { class: 'map-canvas', style: 'width: 100%;' }) }}
 {% endblock %}
