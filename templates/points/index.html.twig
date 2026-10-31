@@ -3,29 +3,31 @@
 {% block title %}Location Points{% endblock %}
 
 {% block body %}
-    <h1>Location Points</h1>
-    <table class="table">
-        <thead>
+    <main class="m-3">
+        <h1>Location Points</h1>
+        <table class="table">
+            <thead>
             <tr>
                 <th>ID</th>
                 <th>Recorded at (UTC)</th>
                 <th>Longitude / Latitude</th>
                 <th>Misc</th>
             </tr>
-        </thead>
-        <tbody>
-        {% for item in items %}
-            <tr>
-                <th scope="row">{{ item.id }}</th>
-                <td><time datetime="{{ item.recordedAt|date('c', 'UTC') }}">{{ item.recordedAt|date('Y-m-d H:i:s', 'UTC') }}</time></td>
-                <td>{{ item.longitude }}, {{ item.latitude }}</td>
-                <td>
-                    Acc: {{ item.accuracyM ?? '?' }} m,
-                    Alt: {{ item.altitudeM ?? '?' }} m
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {{ ux_pagination(items) }}
+            </thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <th scope="row">{{ item.id }}</th>
+                    <td><time datetime="{{ item.recordedAt|date('c', 'UTC') }}">{{ item.recordedAt|date('Y-m-d H:i:s', 'UTC') }}</time></td>
+                    <td>{{ item.longitude }}, {{ item.latitude }}</td>
+                    <td>
+                        Acc: {{ item.accuracyM ?? '?' }} m,
+                        Alt: {{ item.altitudeM ?? '?' }} m
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {{ ux_pagination(items) }}
+    </main>
 {% endblock %}

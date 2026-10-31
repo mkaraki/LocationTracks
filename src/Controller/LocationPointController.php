@@ -7,12 +7,25 @@ use App\Entity\LocationSource;
 use App\Entity\RawRecord;
 use App\Entity\User;
 use App\Repository\LocationPointRepository;
+use DateInterval;
+use DateTime;
+use DateTimeZone;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TimezoneType;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\UX\Map\Cluster\GridClusteringAlgorithm;
+use Symfony\UX\Map\Icon\Icon;
+use Symfony\UX\Map\Map;
+use Symfony\UX\Map\Marker;
+use Symfony\UX\Map\Point;
+use Symfony\UX\Map\Polyline;
 use Symfony\UX\Pagination\PaginatorInterface;
 
 class LocationPointController extends AbstractController
@@ -38,6 +51,74 @@ class LocationPointController extends AbstractController
 
         return $this->render('points/index.html.twig', [
             'items' => $items,
+        ]);
+    }
+
+    #[Route('/points/map', name: 'point_map')]
+    #[IsGranted('ROLE_USER')]
+    public function map(
+        LocationPointRepository $repository,
+        #[CurrentUser] User $user,
+        Request $request,
+    ): Response
+    {
+        $startTime = new DateTime('now')->sub(new DateInterval('PT24H'))->setTimezone(new DateTimeZone('utc'));
+        $endTime = new DateTime('now')->setTImezone(new DateTimeZone('utc'));
+
+        $items = $repository->findByUserAndTimeRange($user, $startTime, $endTime);
+        $itemsCount = count($items);
+
+        $map = new Map();
+
+        if ($itemsCount === 0) {
+            $marker = new Marker(
+                position: new Point(0, 0),
+                title: 'No data found',
+            );
+            $map = $map
+                ->center(new Point(0, 0))
+                ->addMarker($marker)
+                ->zoom(6);
+        } else if ($itemsCount === 1) {
+            $item = $items[0];
+            $marker = new Marker(
+                position: new Point($item->getLatitude(), $item->getLongitude()),
+                title: 'Id: #' . $item->getId(),
+            );
+            $map = $map
+                ->center(new Point($item->getLatitude(), $item->getLongitude()))
+                ->zoom(17)
+                ->addMarker($marker);
+        } else {
+            $points = [];
+            foreach ($items as $item) {
+                $points[] = new Point($item->getLatitude(), $item->getLongitude());
+            }
+            $polyLine = new Polyline(
+                points: $points,
+            );
+
+            $icon = Icon::svg('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle r="2" cx="12" cy="12" fill="red" /></svg>');
+
+            $markers = array_map(function (Point $array) use ($icon): Marker { return new Marker(
+                position: $array,
+                icon: $icon,
+            ); }, $points);
+
+            $map = $map
+                ->addPolyline($polyLine);
+
+            foreach ($markers as $marker) {
+                $map = $map->addMarker($marker);
+            }
+
+            $map = $map
+                ->fitBoundsToMarkers();
+        }
+
+        return $this->render('points/map.html.twig', [
+            'map' => $map,
+            'itemsCount' => $itemsCount,
         ]);
     }
 

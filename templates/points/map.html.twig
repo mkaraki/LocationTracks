@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Location Point Map{% endblock %}
+
+{% block body %}
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    {{ ux_map(map, { style: 'height: 100%; width: 100%;' }) }}
+    <script>
+        console.info(`Showing ${ {{ itemsCount }} } items`);
+    </script>
+{% endblock %}

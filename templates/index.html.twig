@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Location Tracks{% endblock %}
+
+{% block body %}
+    <main class="m-3">
+        <h1 class="me-3">Location Tracks</h1>
+        <div class="me-3">
+            <a class="btn btn-primary btn-sm me-2" href="{{ path('point_map') }}" role="button">Show maps</a>
+            <a class="btn btn-secondary btn-sm me-2" href="{{ path('point_index') }}" role="button">Position History</a>
+            <a class="btn btn-secondary btn-sm me-2" href="{{ path('source_index') }}" role="button">Source Management</a>
+        </div>
+    </main>
+{% endblock %}
