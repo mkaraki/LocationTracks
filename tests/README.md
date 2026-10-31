@@ -31,6 +31,13 @@ existing PHPUnit, BrowserKit and CSS Selector requirements.
   credential revocation and preservation of historical records. Unit tests check
   role removal on disabled sources; an integration test exercises the real
   security user provider after credentials are cleared.
+* `/points/` application tests exercise anonymous and ingestion-only access,
+  empty results, multiple owners and sources, date/coordinate/measurement
+  rendering, missing versus zero measurements, disabled-source history,
+  descending ID order, 100-row cursor pagination in both directions, cross-owner
+  cursor rejection and malformed cursor input. Fixtures include 101 owned points
+  interleaved with another owner's points, so page limits and ownership are
+  checked together.
 
 ## MariaDB 10.6 setup
 
@@ -70,9 +77,9 @@ credentials. Run
 create `location_tracks_test`. Do not point this URL at the application database.
 
 Before each database test, the fixture helper verifies the `test` environment,
-that the resolved name ends with `_test` (plus an optional alphanumeric/underscore
-worker token), and the **actual server version** is MariaDB 10.6. Only then does it
-drop/recreate the mapped entity tables with Doctrine's `SchemaTool`. Application
+then drops/recreates the mapped entity tables with Doctrine's `SchemaTool`.
+The connection uses `DATABASE_URL` and Doctrine's configured test suffix.
+Application
 tests keep a single kernel across requests. Tests run sequentially against this
 database; repeated full runs reset their fixtures. SQLite is not used.
 
@@ -96,6 +103,12 @@ The trigger filters follow
 
 ## Defects corrected while adding regression tests
 
+* Populated `/points/` pages returned HTTP 500 because Twig attempted to print a
+  date object directly. The table now formats the actual `recordedAt` timestamp
+  as UTC, instead of falling back to ingestion time through nonexistent
+  `reportedAt`. It also uses the correct `longitude`, `accuracyM` and `altitudeM`
+  accessors, so coordinates and optional measurements display correctly. Dates
+  include a machine-readable `<time datetime>` value and an explicit UTC heading.
 * A leftover SQLite override prevented the standard `DATABASE_URL` from selecting
   MariaDB in tests and CI. That override was removed; the fixture helper checks
   the actual database name and server again before resetting tables.

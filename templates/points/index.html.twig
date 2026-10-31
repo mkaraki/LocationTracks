@@ -8,7 +8,7 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Reported at</th>
+                <th>Recorded at (UTC)</th>
                 <th>Longitude / Latitude</th>
                 <th>Misc</th>
             </tr>
@@ -17,12 +17,12 @@
         {% for item in items %}
             <tr>
                 <th scope="row">{{ item.id }}</th>
-                <th>{{ item.reportedAt ?? item.createdAt }}</th>
-                <th>{{ item.logitude }}, {{ item.latitude }}</th>
-                <th>
-                    Acc: {{ item.accuracy_m ?? '?' }} m,
-                    Alt: {{ item.altitude_m ?? '?' }} m
-                </th>
+                <td><time datetime="{{ item.recordedAt|date('c', 'UTC') }}">{{ item.recordedAt|date('Y-m-d H:i:s', 'UTC') }}</time></td>
+                <td>{{ item.longitude }}, {{ item.latitude }}</td>
+                <td>
+                    Acc: {{ item.accuracyM ?? '?' }} m,
+                    Alt: {{ item.altitudeM ?? '?' }} m
+                </td>
             </tr>
         {% endfor %}
         </tbody>
