@@ -1,0 +1,18 @@
+name: location_tracks_tests
+
+services:
+  database:
+    image: mariadb:10.6
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: '1'
+      MARIADB_DATABASE: location_tracks_test
+      MARIADB_USER: test
+      MARIADB_PASSWORD: test
+    ports:
+      - '127.0.0.1:3307:3306'
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

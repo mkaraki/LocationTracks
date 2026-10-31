@@ -13,9 +13,15 @@ trait DatabaseTrait
     protected function prepareDatabase(): EntityManagerInterface
     {
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        // Refuse schema creation unless this is our disposable in-memory connection.
-        self::assertTrue($em->getConnection()->getParams()['memory'] ?? false);
-        (new SchemaTool($em))->createSchema($em->getMetadataFactory()->getAllMetadata());
+        $connection = $em->getConnection();
+        // Check the resolved database and real server before resetting any tables.
+        self::assertSame('test', static::$kernel->getEnvironment());
+        self::assertMatchesRegularExpression('/^location_tracks_test[A-Za-z0-9_]*$/D', $connection->getDatabase());
+        self::assertMatchesRegularExpression('/^10\.6\.\d+.*MariaDB/i', $connection->getServerVersion());
+        $metadata = $em->getMetadataFactory()->getAllMetadata();
+        $schemaTool = new SchemaTool($em);
+        $schemaTool->dropSchema($metadata);
+        $schemaTool->createSchema($metadata);
 
         return $em;
     }

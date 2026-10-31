@@ -19,7 +19,7 @@ class OwnTracksIngestionTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        // Preserve the in-memory database between requests within a test.
+        // Keep the same kernel and entity manager across requests within a test.
         $this->client->disableReboot();
         $this->createSource($this->prepareDatabase());
     }

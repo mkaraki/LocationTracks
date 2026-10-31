@@ -26,7 +26,7 @@ class RawRecord
     #[ORM\Column(length: 512, nullable: true)]
     private ?string $source_record_dedup_key = null;
 
-    #[ORM\Column(type: Types::BINARY)]
+    #[ORM\Column(type: Types::BINARY, length: 64)]
     private ?string $payload_hash = null;
 
     #[ORM\Column(type: Types::TEXT)]
