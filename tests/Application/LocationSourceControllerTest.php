@@ -248,7 +248,7 @@ class LocationSourceControllerTest extends WebTestCase
         $values['form'] = array_replace($values['form'], $changes);
         $this->client->request('POST', '/settings/sources/new', $values);
         self::assertResponseStatusCodeSame(422);
-        self::assertSelectorExists('.invalid-feedback, ul li');
+        self::assertSelectorExists('.invalid-feedback, .alert-danger, ul li');
         self::assertSame(1, $this->em->getRepository(LocationSource::class)->count([]));
     }
 

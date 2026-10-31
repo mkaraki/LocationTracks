@@ -38,6 +38,22 @@ existing PHPUnit, BrowserKit and CSS Selector requirements.
   cursor rejection and malformed cursor input. Fixtures include 101 owned points
   interleaved with another owner's points, so page limits and ownership are
   checked together.
+* Map-view tests decode the actual Leaflet Stimulus attributes rendered by
+  `/points/map`. They check empty/single/multiple-point branches, marker
+  coordinates, center and zoom, chronological polylines, fitted bounds, inclusive
+  time boundaries, owner isolation, disabled-source history, filter submission
+  and safe empty output on invalid input. Repository integration tests verify
+  chronological, inclusive, owner-scoped results against MariaDB after clearing
+  Doctrine's identity map. Existing offset/filter tests remain in
+  `LocationPointControllerTest.php`.
+
+These HTTP tests verify the data delivered to Leaflet, without fetching external
+map tiles or driving browser pan/zoom interactions. Run the browser-offset
+controller's JavaScript tests separately with:
+
+```console
+node --test tests/JavaScript/map_timezone_controller.test.mjs
+```
 
 ## MariaDB 10.6 setup
 
