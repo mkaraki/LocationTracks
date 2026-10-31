@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        # Each kernel gets a fresh database; tests never connect to application data.
+        url: 'sqlite:///:memory:'

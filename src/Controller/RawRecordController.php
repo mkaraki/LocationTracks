@@ -103,6 +103,7 @@ class RawRecordController extends AbstractController
         $rawRecord->setPayload($normalizedJson);
         $rawRecord->setCreatedAt(new \DateTimeImmutable());
         $rawRecord->setRecordType('owntracks_' . $type);
+        $rawRecord->setParseStatus('pending');
 
         if (isset($data['tst']) && filter_var(
                 $data['tst'],
