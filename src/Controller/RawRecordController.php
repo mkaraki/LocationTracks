@@ -87,7 +87,7 @@ class RawRecordController extends AbstractController
         $rawRecordRepo = $em->getRepository(RawRecord::class);
         $payloadHash = hash('sha256', $normalizedJson);
 
-        $rawRecord = $rawRecordRepo->findOneBy(['payload_hash' => $payloadHash]);
+        $rawRecord = $rawRecordRepo->findOneBy(['source' => $source, 'payload_hash' => $payloadHash]);
         if ($rawRecord !== null) {
             return $this->json(
                 ['error' => 'Record already exists'],

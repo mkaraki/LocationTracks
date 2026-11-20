@@ -100,6 +100,19 @@ class LocationSourceController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
+
+            // Check no duplicated username
+            $existingSource = $em->getRepository(LocationSource::class)->findOneBy([
+                'auth_username' => $entity->getAuthUsername(),
+                // Won't validate user. This must be unique across server.
+            ]);
+            if ($existingSource) {
+                $form->get('auth_username')->addError(new \Symfony\Component\Form\FormError('This username is already in use.'));
+                return $this->render('settings/sources/new.html.twig', [
+                    'form' => $form,
+                ]);
+            }
+
             $entity->setUser($this->getUser());
             $entity->setCreatedAt(new \DateTimeImmutable('now'));
 

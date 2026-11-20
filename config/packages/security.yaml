@@ -22,12 +22,16 @@ security:
             security: false
         submitter_auth:
             lazy: false
+            login_throttling:
+                max_attempts: 3
             pattern: ^/api/v1/submit/
             provider: app_submitter_user_provider
             http_basic:
                 realm: Auth
         main:
             lazy: false
+            login_throttling:
+                max_attempts: 3
             provider: app_user_provider
             form_login:
                 login_path: app_login
