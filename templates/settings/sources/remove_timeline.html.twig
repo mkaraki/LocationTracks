@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Delete Google Timeline Source{% endblock %}
+
+{% block body %}
+    <main class="m-3">
+        <h1>Delete Google Timeline Source</h1>
+        <p>This permanently deletes <strong>{{ source.name }}</strong> and all location history imported into it.</p>
+        {% if busy %}
+            <p class="alert alert-warning" role="alert">Another Google Timeline operation is in progress. Try again when it finishes.</p>
+        {% endif %}
+        <form action="{{ path('source_timeline_remove', {id: source.id}) }}" method="post">
+            <input type="hidden" name="token" value="{{ csrf_token('remove-timeline-' ~ source.id) }}">
+            <button type="submit" class="btn btn-danger">Delete source</button>
+            <a class="btn btn-secondary" href="{{ path('source_index') }}">Cancel</a>
+        </form>
+    </main>
+{% endblock %}

@@ -13,6 +13,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity(repositoryClass: LocationSourceRepository::class)]
 class LocationSource implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const TYPE_OWNTRACKS = 1;
+    public const TYPE_GOOGLE_TIMELINE = 2;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -252,7 +255,7 @@ class LocationSource implements UserInterface, PasswordAuthenticatedUserInterfac
      */
     public function getRoles(): array
     {
-        if ($this->deleted_at === null) {
+        if ($this->source_type !== self::TYPE_GOOGLE_TIMELINE && $this->deleted_at === null) {
             return ['ROLE_SUBMITTER'];
         } else {
             return [];

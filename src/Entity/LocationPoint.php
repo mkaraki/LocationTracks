@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: LocationPointRepository::class)]
+#[ORM\Index(name: 'idx_location_point_source_recorded_at', columns: ['source_id', 'recorded_at'])]
 class LocationPoint
 {
     #[ORM\Id]
